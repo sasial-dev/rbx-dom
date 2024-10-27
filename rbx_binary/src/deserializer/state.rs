@@ -1,11 +1,11 @@
 use std::{
     borrow::Cow,
-    collections::{HashSet, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     convert::TryInto,
     io::Read,
 };
 
-use ahash::{RandomState, HashMap, HashMapExt};
+use ahash::RandomState;
 use rbx_dom_weak::{
     types::{
         Attributes, Axes, BinaryString, BrickColor, CFrame, Color3, Color3uint8, ColorSequence,
@@ -39,17 +39,17 @@ pub(super) struct DeserializerState<'db, R> {
 
     /// The metadata contained in the file, which affects how some constructs
     /// are interpreted by Roblox.
-    metadata: HashMap<String, String>,
+    metadata: HashMap<String, String, RandomState>,
 
     /// The SharedStrings contained in the file, if any, in the order that they
     /// appear in the file.
     shared_strings: Vec<SharedString>,
 
     /// All of the instance types described by the file so far.
-    type_infos: HashMap<u32, TypeInfo>,
+    type_infos: HashMap<u32, TypeInfo, RandomState>,
 
     /// All of the instances known by the deserializer.
-    instances_by_ref: HashMap<i32, Instance>,
+    instances_by_ref: HashMap<i32, Instance, RandomState>,
 
     /// Referents for all of the instances with no parent, in order they appear
     /// in the file.
@@ -221,8 +221,8 @@ impl<'db, R: Read> DeserializerState<'db, R> {
 
         let header = FileHeader::decode(&mut input)?;
 
-        let type_infos = HashMap::with_capacity(header.num_types as usize);
-        let instances_by_ref = HashMap::with_capacity(1 + header.num_instances as usize);
+        let type_infos = HashMap::with_capacity_and_hasher(header.num_types as usize, RandomState::default());
+        let instances_by_ref = HashMap::with_capacity_and_hasher(1 + header.num_instances as usize, RandomState::default());
 
         Ok(DeserializerState {
             deserializer,
