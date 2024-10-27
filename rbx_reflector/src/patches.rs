@@ -1,5 +1,6 @@
-use std::{borrow::Cow, collections::HashMap, fs, path::Path};
+use std::{borrow::Cow, fs, path::Path};
 
+use ahash::{HashMap, HashMapExt};
 use anyhow::{anyhow, bail, Context};
 use rbx_reflection::{
     DataType, PropertyKind, PropertyMigration, PropertySerialization, ReflectionDatabase,
@@ -14,7 +15,7 @@ pub struct Patches {
 
 impl Patches {
     pub fn load(dir: &Path) -> anyhow::Result<Self> {
-        let mut change = HashMap::new();
+        let mut change = HashMap::default();
 
         for entry in fs::read_dir(dir)? {
             let entry = entry?;

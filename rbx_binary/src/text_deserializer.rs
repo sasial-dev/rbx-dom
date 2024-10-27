@@ -6,6 +6,7 @@
 
 use std::{collections::HashMap, convert::TryInto, fmt::Write, io::Read};
 
+use ahash::RandomState;
 use rbx_dom_weak::types::{
     Axes, BrickColor, CFrame, Color3, Color3uint8, ColorSequence, ColorSequenceKeypoint,
     CustomPhysicalProperties, Enum, Faces, Font, FontStyle, FontWeight, Matrix3, NumberRange,
@@ -30,7 +31,7 @@ impl DecodedModel {
 
         // The number of instance with a given type ID. Used to correctly decode
         // lists of properties from the PROP chunk.
-        let mut count_by_type_id = HashMap::new();
+        let mut count_by_type_id = HashMap::default();
 
         loop {
             let chunk = Chunk::decode(&mut reader).expect("invalid chunk");
@@ -108,7 +109,7 @@ fn decode_sstr_chunk<R: Read>(mut reader: R) -> DecodedChunk {
 
 fn decode_inst_chunk<R: Read>(
     mut reader: R,
-    count_by_type_id: &mut HashMap<u32, usize>,
+    count_by_type_id: &mut HashMap<u32, usize, RandomState>,
 ) -> DecodedChunk {
     let type_id = reader.read_le_u32().unwrap();
     let type_name = reader.read_string().unwrap();
@@ -134,7 +135,7 @@ fn decode_inst_chunk<R: Read>(
 
 fn decode_prop_chunk<R: Read>(
     mut reader: R,
-    count_by_type_id: &mut HashMap<u32, usize>,
+    count_by_type_id: &mut HashMap<u32, usize, RandomState>,
 ) -> DecodedChunk {
     let type_id = reader.read_le_u32().unwrap();
     let prop_name = reader.read_string().unwrap();

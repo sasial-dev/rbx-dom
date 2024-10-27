@@ -142,18 +142,18 @@ fn apply_dump(database: &mut ReflectionDatabase, dump: &Dump) -> anyhow::Result<
             Some(Cow::Owned(dump_class.superclass.clone()))
         };
 
-        let mut tags = HashSet::new();
+        let mut tags = HashSet::default();
         for dump_tag in &dump_class.tags {
             if let Tag::Regular(tag) = dump_tag {
                 tags.insert(tag.parse().unwrap());
             }
         }
 
-        let mut properties = HashMap::new();
+        let mut properties = HashMap::default();
 
         for member in &dump_class.members {
             if let DumpClassMember::Property(dump_property) = member {
-                let mut tags = HashSet::new();
+                let mut tags = HashSet::default();
                 for dump_tag in &dump_property.tags {
                     if let Tag::Regular(tag) = dump_tag {
                         tags.insert(tag.parse().unwrap());

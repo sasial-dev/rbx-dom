@@ -3,9 +3,10 @@ use std::{
     hash::Hash,
 };
 
+use ahash::RandomState;
 use serde::{Serialize, Serializer};
 
-pub(crate) fn ordered_map<S, K, V>(value: &HashMap<K, V>, serializer: S) -> Result<S::Ok, S::Error>
+pub(crate) fn ordered_map<S, K, V>(value: &HashMap<K, V, RandomState>, serializer: S) -> Result<S::Ok, S::Error>
 where
     K: Hash + Ord + Serialize,
     V: Serialize,
@@ -15,7 +16,7 @@ where
     ordered.serialize(serializer)
 }
 
-pub(crate) fn ordered_set<S, V>(value: &HashSet<V>, serializer: S) -> Result<S::Ok, S::Error>
+pub(crate) fn ordered_set<S, V>(value: &HashSet<V, RandomState>, serializer: S) -> Result<S::Ok, S::Error>
 where
     V: Hash + Ord + Serialize,
     S: Serializer,

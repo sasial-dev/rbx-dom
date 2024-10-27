@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use ahash::RandomState;
 use rbx_types::{Ref, Variant};
 
 /**
@@ -36,7 +37,7 @@ pub struct InstanceBuilder {
     pub(crate) referent: Ref,
     pub(crate) name: String,
     pub(crate) class: String,
-    pub(crate) properties: HashMap<String, Variant>,
+    pub(crate) properties: HashMap<String, Variant, RandomState>,
     pub(crate) children: Vec<InstanceBuilder>,
 }
 
@@ -51,7 +52,7 @@ impl InstanceBuilder {
             referent: Ref::new(),
             name,
             class,
-            properties: HashMap::new(),
+            properties: HashMap::default(),
             children: Vec::new(),
         }
     }
@@ -62,7 +63,7 @@ impl InstanceBuilder {
             referent: Ref::new(),
             name: String::new(),
             class: String::new(),
-            properties: HashMap::new(),
+            properties: HashMap::default(),
             children: Vec::new(),
         }
     }
@@ -183,7 +184,7 @@ impl InstanceBuilder {
 ///
 /// Operations that could affect other instances contained in the
 /// [`WeakDom`][crate::WeakDom] cannot be performed on an `Instance` correctly.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Instance {
     pub(crate) referent: Ref,
     pub(crate) children: Vec<Ref>,
@@ -196,7 +197,7 @@ pub struct Instance {
     pub class: String,
 
     /// Any properties stored on the object that are not `Name` or `ClassName`.
-    pub properties: HashMap<String, Variant>,
+    pub properties: HashMap<String, Variant, RandomState>,
 }
 
 impl Instance {

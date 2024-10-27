@@ -1,10 +1,11 @@
 use std::{
     borrow::Cow,
-    collections::{HashMap, HashSet, VecDeque},
+    collections::{HashSet, VecDeque},
     convert::TryInto,
     io::Read,
 };
 
+use ahash::{RandomState, HashMap, HashMapExt};
 use rbx_dom_weak::{
     types::{
         Attributes, Axes, BinaryString, BrickColor, CFrame, Color3, Color3uint8, ColorSequence,
@@ -57,7 +58,7 @@ pub(super) struct DeserializerState<'db, R> {
     /// Contains a set of unknown type IDs that we've encountered so far while
     /// deserializing this file. We use this map in order to ensure we only
     /// print one warning per unknown type ID when deserializing a file.
-    unknown_type_ids: HashSet<u8>,
+    unknown_type_ids: HashSet<u8, RandomState>,
 }
 
 /// Represents a unique instance class. Binary models define all their instance
@@ -227,12 +228,12 @@ impl<'db, R: Read> DeserializerState<'db, R> {
             deserializer,
             input,
             tree,
-            metadata: HashMap::new(),
+            metadata: HashMap::default(),
             shared_strings: Vec::new(),
             type_infos,
             instances_by_ref,
             root_instance_refs: Vec::new(),
-            unknown_type_ids: HashSet::new(),
+            unknown_type_ids: HashSet::default(),
         })
     }
 

@@ -5,6 +5,7 @@ use std::{
     io::Write,
 };
 
+use ahash::RandomState;
 use rbx_dom_weak::{
     types::{
         Attributes, Axes, BinaryString, BrickColor, CFrame, Color3, Color3uint8, ColorSequence,
@@ -53,7 +54,7 @@ pub(super) struct SerializerState<'dom, 'db, W> {
 
     /// A map from rbx-dom's unique instance ID (Ref) to the ID space used in
     /// the binary model format, signed integers.
-    id_to_referent: HashMap<Ref, i32>,
+    id_to_referent: HashMap<Ref, i32, RandomState>,
 
     /// All of the types of instance discovered by our serializer that we'll be
     /// writing into the output.
@@ -65,7 +66,7 @@ pub(super) struct SerializerState<'dom, 'db, W> {
 
     /// A map of SharedStrings to where it is in the SSTR chunk. This is used
     /// for writing PROP chunks.
-    shared_string_ids: HashMap<SharedString, u32>,
+    shared_string_ids: HashMap<SharedString, u32, RandomState>,
 }
 
 /// An instance class that our serializer knows about. We should have one struct
@@ -98,7 +99,7 @@ struct TypeInfo<'dom, 'db> {
     /// A set containing the properties that we have seen so far in the file and
     /// processed. This helps us avoid traversing the reflection database
     /// multiple times if there are many copies of the same kind of instance.
-    properties_visited: HashSet<(Cow<'db, str>, VariantType)>,
+    properties_visited: HashSet<(Cow<'db, str>, VariantType), RandomState>,
 }
 
 /// A property on a specific class that our serializer knows about.
@@ -219,7 +220,7 @@ impl<'dom, 'db> TypeInfos<'dom, 'db> {
                     instances: Vec::new(),
                     properties,
                     class_descriptor,
-                    properties_visited: HashSet::new(),
+                    properties_visited: HashSet::default(),
                 },
             );
         }
@@ -237,10 +238,10 @@ impl<'dom, 'db, W: Write> SerializerState<'dom, 'db, W> {
             dom,
             output,
             relevant_instances: Vec::new(),
-            id_to_referent: HashMap::new(),
+            id_to_referent: HashMap::default(),
             type_infos: TypeInfos::new(serializer.database),
             shared_strings: Vec::new(),
-            shared_string_ids: HashMap::new(),
+            shared_string_ids: HashMap::default(),
         }
     }
 

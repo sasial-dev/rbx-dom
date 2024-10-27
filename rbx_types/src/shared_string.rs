@@ -6,11 +6,12 @@ use std::{
     sync::{Arc, Mutex, Weak},
 };
 
+use ahash::RandomState;
 use blake3::Hash as Blake3Hash;
 
 lazy_static::lazy_static! {
-    static ref STRING_CACHE: Arc<Mutex<HashMap<Blake3Hash, Weak<Vec<u8>>>>> = {
-        Arc::new(Mutex::new(HashMap::new()))
+    static ref STRING_CACHE: Arc<Mutex<HashMap<Blake3Hash, Weak<Vec<u8>>, RandomState>>> = {
+        Arc::new(Mutex::new(HashMap::default()))
     };
 }
 

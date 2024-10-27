@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use ahash::RandomState;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -124,5 +125,5 @@ pub struct DumpEnumItem {
 #[allow(dead_code)]
 pub enum Tag {
     Regular(String),
-    Named(HashMap<String, String>),
+    Named(HashMap<String, String, RandomState>),
 }

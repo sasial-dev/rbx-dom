@@ -7,6 +7,7 @@ use crate::{
     types::{Ref, Variant},
     WeakDom,
 };
+use ahash::RandomState;
 use serde::{Deserialize, Serialize};
 
 /// Contains state for viewing and redacting nondeterministic portions of
@@ -16,7 +17,7 @@ use serde::{Deserialize, Serialize};
 /// persist when viewing the same instance multiple times, and should stay the
 /// same across multiple runs of a test.
 pub struct DomViewer {
-    referent_to_id: HashMap<Ref, String>,
+    referent_to_id: HashMap<Ref, String, RandomState>,
     next_id: usize,
 }
 
@@ -24,7 +25,7 @@ impl DomViewer {
     /// Construct a new `DomViewer` with no interned referents.
     pub fn new() -> Self {
         Self {
-            referent_to_id: HashMap::new(),
+            referent_to_id: HashMap::default(),
             next_id: 0,
         }
     }
@@ -87,7 +88,7 @@ impl DomViewer {
                         if referent.is_some() {
                             let referent_str = self
                                 .referent_to_id
-                                .get(referent)
+                                .get(&referent)
                                 .cloned()
                                 .unwrap_or_else(|| "[unknown ID]".to_owned());
 

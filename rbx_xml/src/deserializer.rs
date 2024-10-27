@@ -3,6 +3,7 @@ use std::{
     io::Read,
 };
 
+use ahash::RandomState;
 use log::trace;
 use rbx_dom_weak::{
     types::{Ref, SharedString, Variant, VariantType},
@@ -123,14 +124,14 @@ pub struct ParseState<'dom, 'db> {
     /// Metadata deserialized from 'Meta' fields in the file.
     /// Known fields are:
     /// - ExplicitAutoJoints
-    metadata: HashMap<String, String>,
+    metadata: HashMap<String, String, RandomState>,
 
     /// A map referent strings to IDs. This map is filled up as instances are
     /// deserialized, and referred to when filling out Ref properties.
     ///
     /// We need to do that step in two passes because it's possible for
     /// instances to refer to instances that are later in the file.
-    referents_to_ids: HashMap<String, Ref>,
+    referents_to_ids: HashMap<String, Ref, RandomState>,
 
     /// A list of Ref property rewrites to apply. After the first
     /// deserialization pass, we enumerate over this list and fill in the
@@ -139,7 +140,7 @@ pub struct ParseState<'dom, 'db> {
 
     /// A map from shared string hashes (currently MD5, decided by Roblox) to
     /// the actual SharedString type.
-    known_shared_strings: HashMap<String, SharedString>,
+    known_shared_strings: HashMap<String, SharedString, RandomState>,
 
     /// A list of SharedString properties to set in the tree as a secondary
     /// pass. This works just like referent rewriting since the shared string
@@ -148,7 +149,7 @@ pub struct ParseState<'dom, 'db> {
 
     /// Contains all of the unknown types that have been found so far. Tracking
     /// them here helps ensure that we only output a warning once per type.
-    unknown_type_names: HashSet<String>,
+    unknown_type_names: HashSet<String, RandomState>,
 }
 
 struct ReferentRewrite {
@@ -168,12 +169,12 @@ impl<'dom, 'db> ParseState<'dom, 'db> {
         ParseState {
             tree,
             options,
-            metadata: HashMap::new(),
-            referents_to_ids: HashMap::new(),
+            metadata: HashMap::default(),
+            referents_to_ids: HashMap::default(),
             referent_rewrites: Vec::new(),
-            known_shared_strings: HashMap::new(),
+            known_shared_strings: HashMap::default(),
             shared_string_rewrites: Vec::new(),
-            unknown_type_names: HashSet::new(),
+            unknown_type_names: HashSet::default(),
         }
     }
 
@@ -453,7 +454,7 @@ fn deserialize_instance<R: Read>(
         state.referents_to_ids.insert(referent, instance_id);
     }
 
-    let mut properties: HashMap<String, Variant> = HashMap::new();
+    let mut properties: HashMap<String, Variant, RandomState> = HashMap::default();
 
     loop {
         match reader.expect_peek()? {
@@ -509,7 +510,7 @@ fn deserialize_properties<R: Read>(
     reader: &mut XmlEventReader<R>,
     state: &mut ParseState,
     instance_id: Ref,
-    props: &mut HashMap<String, Variant>,
+    props: &mut HashMap<String, Variant, RandomState>,
 ) -> Result<(), DecodeError> {
     reader.expect_start_with_name("Properties")?;
 

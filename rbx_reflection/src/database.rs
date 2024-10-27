@@ -7,6 +7,7 @@ use std::{
     collections::{HashMap, HashSet},
 };
 
+use ahash::RandomState;
 use rbx_types::{Variant, VariantType};
 use serde::{Deserialize, Serialize};
 
@@ -23,11 +24,11 @@ pub struct ReflectionDatabase<'a> {
 
     /// All of the the known classes in the database.
     #[serde(serialize_with = "crate::serde_util::ordered_map")]
-    pub classes: HashMap<Cow<'a, str>, ClassDescriptor<'a>>,
+    pub classes: HashMap<Cow<'a, str>, ClassDescriptor<'a>, RandomState>,
 
     /// All of the known enums in the database.
     #[serde(default, serialize_with = "crate::serde_util::ordered_map")]
-    pub enums: HashMap<Cow<'a, str>, EnumDescriptor<'a>>,
+    pub enums: HashMap<Cow<'a, str>, EnumDescriptor<'a>, RandomState>,
 }
 
 pub struct SuperClassIter<'a> {
@@ -53,8 +54,8 @@ impl<'a> ReflectionDatabase<'a> {
     pub fn new() -> Self {
         Self {
             version: [0, 0, 0, 0],
-            classes: HashMap::new(),
-            enums: HashMap::new(),
+            classes: HashMap::default(),
+            enums: HashMap::default(),
         }
     }
 
@@ -130,7 +131,7 @@ pub struct ClassDescriptor<'a> {
 
     /// A set of all of the tags attached to this class.
     #[serde(serialize_with = "crate::serde_util::ordered_set")]
-    pub tags: HashSet<ClassTag>,
+    pub tags: HashSet<ClassTag, RandomState>,
 
     /// If this class descends from another class, contains the name of that
     /// class.
@@ -139,12 +140,12 @@ pub struct ClassDescriptor<'a> {
 
     /// A map of all of the properties available on this class.
     #[serde(serialize_with = "crate::serde_util::ordered_map")]
-    pub properties: HashMap<Cow<'a, str>, PropertyDescriptor<'a>>,
+    pub properties: HashMap<Cow<'a, str>, PropertyDescriptor<'a>, RandomState>,
 
     /// A map of the default properties for this instance if a value is not
     /// defined in serialization or freshly inserted with `Instance.new`.
     #[serde(serialize_with = "crate::serde_util::ordered_map")]
-    pub default_properties: HashMap<Cow<'a, str>, Variant>,
+    pub default_properties: HashMap<Cow<'a, str>, Variant, RandomState>,
 }
 
 impl<'a> ClassDescriptor<'a> {
@@ -152,10 +153,10 @@ impl<'a> ClassDescriptor<'a> {
     pub fn new<S: Into<Cow<'a, str>>>(name: S) -> Self {
         Self {
             name: name.into(),
-            tags: HashSet::new(),
+            tags: HashSet::default(),
             superclass: None,
-            properties: HashMap::new(),
-            default_properties: HashMap::new(),
+            properties: HashMap::default(),
+            default_properties: HashMap::default(),
         }
     }
 }
@@ -176,7 +177,7 @@ pub struct PropertyDescriptor<'a> {
 
     /// A set of the tags that apply to this property.
     #[serde(serialize_with = "crate::serde_util::ordered_set")]
-    pub tags: HashSet<PropertyTag>,
+    pub tags: HashSet<PropertyTag, RandomState>,
 
     /// The kind of property this is, including whether it is canonical.
     pub kind: PropertyKind<'a>,
@@ -189,7 +190,7 @@ impl<'a> PropertyDescriptor<'a> {
             name: name.into(),
             scriptability: Scriptability::None,
             data_type,
-            tags: HashSet::new(),
+            tags: HashSet::default(),
             kind: PropertyKind::Canonical {
                 serialization: PropertySerialization::Serializes,
             },
@@ -272,7 +273,7 @@ pub struct EnumDescriptor<'a> {
 
     /// All of the members of this enum, stored as a map from names to values.
     #[serde(serialize_with = "crate::serde_util::ordered_map")]
-    pub items: HashMap<Cow<'a, str>, u32>,
+    pub items: HashMap<Cow<'a, str>, u32, RandomState>,
 }
 
 impl<'a> EnumDescriptor<'a> {
@@ -280,7 +281,7 @@ impl<'a> EnumDescriptor<'a> {
     pub fn new<S: Into<Cow<'a, str>>>(name: S) -> Self {
         Self {
             name: name.into(),
-            items: HashMap::new(),
+            items: HashMap::default(),
         }
     }
 }

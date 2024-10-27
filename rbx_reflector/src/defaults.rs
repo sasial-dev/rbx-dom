@@ -6,6 +6,7 @@ use std::{
     path::PathBuf,
 };
 
+use ahash::RandomState;
 use anyhow::Context;
 use rbx_dom_weak::Instance;
 use rbx_reflection::ReflectionDatabase;
@@ -24,7 +25,7 @@ pub fn apply_defaults(
     let tree =
         rbx_xml::from_reader(file, decode_options).context("Could not decode defaults place")?;
 
-    let mut found_classes = HashSet::new();
+    let mut found_classes: HashSet<String, RandomState> = HashSet::default();
     let mut to_visit = VecDeque::from_iter(tree.root().children());
 
     while let Some(referent) = to_visit.pop_front() {

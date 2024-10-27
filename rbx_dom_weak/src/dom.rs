@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 
+use ahash::RandomState;
 use rbx_types::{Ref, UniqueId, Variant};
 
 use crate::instance::{Instance, InstanceBuilder};
@@ -11,20 +12,20 @@ use crate::instance::{Instance, InstanceBuilder};
 ///
 /// When constructing instances, you'll want to create [`InstanceBuilder`]
 /// objects and insert them into the tree.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WeakDom {
-    instances: HashMap<Ref, Instance>,
+    instances: HashMap<Ref, Instance, RandomState>,
     root_ref: Ref,
-    unique_ids: HashSet<UniqueId>,
+    unique_ids: HashSet<UniqueId, RandomState>,
 }
 
 impl WeakDom {
     /// Construct a new `WeakDom` described by the given [`InstanceBuilder`].
     pub fn new(builder: InstanceBuilder) -> WeakDom {
         let mut dom = WeakDom {
-            instances: HashMap::new(),
+            instances: HashMap::default(),
             root_ref: builder.referent,
-            unique_ids: HashSet::new(),
+            unique_ids: HashSet::default(),
         };
 
         dom.insert(Ref::none(), builder);
@@ -34,7 +35,7 @@ impl WeakDom {
     /// Consumes the WeakDom, returning its underlying root ref and backing
     /// storage. This method is useful when tree-preserving operations are too
     /// slow.
-    pub fn into_raw(self) -> (Ref, HashMap<Ref, Instance>) {
+    pub fn into_raw(self) -> (Ref, HashMap<Ref, Instance, RandomState>) {
         (self.root_ref, self.instances)
     }
 
@@ -351,7 +352,7 @@ impl WeakDom {
         // Unwrap is safe because we just inserted this referent into the instance map
         let instance = self.instances.get_mut(&referent).unwrap();
         if let Some(Variant::UniqueId(unique_id)) = instance.properties.get("UniqueId") {
-            if self.unique_ids.contains(unique_id) {
+            if self.unique_ids.contains(&unique_id) {
                 // We found a collision! We need to replace the UniqueId property with
                 // a new value.
 
@@ -376,7 +377,7 @@ impl WeakDom {
             .unwrap_or_else(|| panic!("cannot remove an instance that does not exist"));
 
         if let Some(Variant::UniqueId(unique_id)) = instance.properties.get("UniqueId") {
-            self.unique_ids.remove(unique_id);
+            self.unique_ids.remove(&unique_id);
         }
 
         instance
@@ -409,9 +410,9 @@ impl<'a> Iterator for WeakDomDescendants<'a> {
 impl Default for WeakDom {
     fn default() -> WeakDom {
         WeakDom {
-            instances: HashMap::new(),
+            instances: HashMap::default(),
             root_ref: Ref::none(),
-            unique_ids: HashSet::new(),
+            unique_ids: HashSet::default(),
         }
     }
 }
@@ -419,24 +420,26 @@ impl Default for WeakDom {
 #[derive(Debug, Default)]
 struct CloneContext {
     queue: VecDeque<(Ref, Ref)>,
-    ref_rewrites: HashMap<Ref, Ref>,
+    ref_rewrites: HashMap<Ref, Ref, RandomState>,
 }
 
 impl CloneContext {
     /// On any instances cloned during the operation, rewrite any Ref properties that
     /// point to instances that were also cloned.
     fn rewrite_refs(self, dest: &mut WeakDom) {
-        let mut existing_dest_refs = HashSet::new();
+        let mut existing_dest_refs: HashSet<&Ref, RandomState> = HashSet::default();
 
+        // TODO: remove
+        let dest_clone = dest.clone();
         for (_, new_ref) in self.ref_rewrites.iter() {
-            let instance = dest
+            let instance = dest_clone
                 .get_by_ref(*new_ref)
                 .expect("Cannot rewrite refs on an instance that does not exist");
 
             for prop_value in instance.properties.values() {
                 if let Variant::Ref(value) = prop_value {
-                    if dest.instances.contains_key(value) {
-                        existing_dest_refs.insert(*value);
+                    if dest.instances.contains_key(&value) {
+                        existing_dest_refs.insert(value);
                     }
                 }
             }
@@ -449,7 +452,7 @@ impl CloneContext {
 
             for prop_value in instance.properties.values_mut() {
                 if let Variant::Ref(original_ref) = prop_value {
-                    if let Some(new_ref) = self.ref_rewrites.get(original_ref) {
+                    if let Some(new_ref) = self.ref_rewrites.get(&original_ref) {
                         // If the ref points to an instance contained within the
                         // cloned subtree, rewrite it as the corresponding new ref
                         *prop_value = Variant::Ref(*new_ref);
@@ -700,8 +703,8 @@ mod test {
         let child = dom.get_by_ref(child_ref).unwrap();
         if let Some(Variant::UniqueId(actual_unique_id)) = child.properties.get("UniqueId") {
             assert_ne!(
-                unique_id,
-                *actual_unique_id,
+                &unique_id,
+                actual_unique_id,
                 "child should have a different UniqueId than the root ({unique_id}), but it was the same."
             )
         } else {
@@ -727,8 +730,8 @@ mod test {
         let child = dom.get_by_ref(child_ref).unwrap();
         if let Some(Variant::UniqueId(actual_unique_id)) = child.properties.get("UniqueId") {
             assert_ne!(
-                unique_id,
-                *actual_unique_id,
+                &unique_id,
+                actual_unique_id,
                 "child should have a different UniqueId than the parent ({unique_id}), but it was the same."
             )
         } else {
@@ -749,8 +752,8 @@ mod test {
         let child = dom.get_by_ref(child_ref).unwrap();
         if let Some(Variant::UniqueId(actual_unique_id)) = child.properties.get("UniqueId") {
             assert_eq!(
-                unique_id,
-                *actual_unique_id,
+                &unique_id,
+                actual_unique_id,
                 "if there is no collision, UniqueId should remain the same after passing it to WeakDom::insert."
             )
         } else {
@@ -780,7 +783,7 @@ mod test {
         let folder = other_dom.get_by_ref(folder_ref).unwrap();
         if let Some(Variant::UniqueId(actual_unique_id)) = folder.properties.get("UniqueId") {
             assert_ne!(
-                unique_id, *actual_unique_id,
+                &unique_id, actual_unique_id,
                 "WeakDom::transfer caused a UniqueId collision."
             )
         } else {

@@ -4,6 +4,7 @@ use std::{
     io::Write,
 };
 
+use ahash::RandomState;
 use rbx_dom_weak::{
     types::{Ref, SharedString, SharedStringHash, Variant, VariantType},
     WeakDom,
@@ -122,7 +123,7 @@ pub struct EmitState<'db> {
 
     /// A map of IDs written so far to the generated referent that they use.
     /// This map is used to correctly emit Ref properties.
-    referent_map: HashMap<Ref, u32>,
+    referent_map: HashMap<Ref, u32, RandomState>,
 
     /// The referent value that will be used for emitting the next instance.
     next_referent: u32,
@@ -136,7 +137,7 @@ impl<'db> EmitState<'db> {
     pub fn new(options: EncodeOptions<'db>) -> EmitState<'db> {
         EmitState {
             options,
-            referent_map: HashMap::new(),
+            referent_map: HashMap::default(),
             next_referent: 0,
             shared_strings_to_emit: BTreeMap::new(),
         }
