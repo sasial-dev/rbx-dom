@@ -32,12 +32,21 @@ pub fn parts_1000(c: &mut Criterion) {
     )
 }
 
+pub fn alsbury(c: &mut Criterion) {
+    bench(
+        c.benchmark_group("Alsbury")
+            .sampling_mode(SamplingMode::Flat),
+        include_bytes!("../../../../New-Division/Game2/edit.rbxl"),
+    )
+}
+
 criterion_group!(
     bench_suite,
     folders_100,
     deep_folders_100,
     modulescripts_100_lines_100,
     parts_1000,
+    alsbury,
 );
 
 criterion_main!(bench_suite);
